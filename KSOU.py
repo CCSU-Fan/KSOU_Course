@@ -1,7 +1,5 @@
-import requests,re,time,math,random,json
+import requests,re,time,math,random
 from bs4 import BeautifulSoup
-from requests.api import post
-
 def Get_PostData(LoginUrl):
     '''
        获取登录参数
@@ -58,10 +56,19 @@ def Get_Course_ContentUrl(): #获取各个课程API URL
         Content_Urls.append(Course_ContentUrl)
     return Content_Urls
 
-def Get_Course_VideoDetail():#获取各个课程下属全部视频信息
+def M_Heart():#获取各个课程下属全部视频信息
+    Post_Data0 = {
+        "playStatus":"true",
+        "isResourcePage":"true",
+        "courseVersionId":"0",
+        "activityId":"0",
+        "type":2,
+        "isStuLearningRecord":2,
+        "token":SetToken(),#生成token
+        "timePoint":random.random()*100
+    }
     Content_Urls = Get_Course_ContentUrl()
-    Active_IDS = []#存放CourseID
-    Deal_U = []#存放ActiveID
+    P_D_H = []
     for Url in Content_Urls:#进行第一层循环
         Course_DeatilContent = requests.get(Url,headers=LoginHeaders).json()['body']
         Course_Json_Len = len(Course_DeatilContent)
@@ -72,9 +79,12 @@ def Get_Course_VideoDetail():#获取各个课程下属全部视频信息
                 if(Type_Ac == "2"):#过滤非视频链接
                     ACtiveID_CourseID = {}
                     Deal_Url = Url.replace("http://xuexi.jsou.cn/jxpt-web/student/course/getAllActivity/","")#处理课程URL，提取CRL
-                    Active_IDS.append(Active_Info["activityId"])#存储AID
-                    Deal_U.append(Deal_Url)#存储CID
-    return Deal_U,Active_IDS
+                    #Active_IDS.append(Active_Info["activityId"])#存储AID
+                    #Deal_U.append(Deal_Url)#存储CID
+                    Post_Data0["courseVersionId"] = Deal_Url
+                    Post_Data0["activityId"] = Active_Info["activityId"]
+                    P_D_H.append(Post_Data0)
+    return P_D_H
 
 def SetToken():#根据网站逆向得出Token算法
     len_ = 8.or(32)
@@ -87,33 +97,8 @@ def SetToken():#根据网站逆向得出Token算法
         Pwd+=Salt[math.floor(random.random()*MaxPos)]
     return Pwd
     
-def Make_Heart():#制作心跳包
-    HeartVer_Url = "http://xuexi.jsou.cn/jxpt-web/common/learningBehavior/heartbeat"
-    C_Url,A_Url = Get_Course_VideoDetail()
-    Post_Data0 = {
-        "playStatus":"true",
-        "isResourcePage":"true",
-        "courseVersionId":"0",
-        "activityId":"0",
-        "type":2,
-        "isStuLearningRecord":2,
-        "token":SetToken(),#生成token
-        "timePoint":random.random()*100
-    }
-    Post_Data1 = {}
-    Post_Data2 = {}
-    Heart_PostPackages = []
-    for CID in C_Url:
-        Post_Data0["courseVersionId"]=CID#进行cid更新
-        Post_Data1.update(Post_Data0)#存储更新后的心跳包
-    for AID in A_Url:
-        Post_Data1["activityId"] = AID#进行aid更新
-        Post_Data2.update(Post_Data1)#存储aid更新心跳包
-        Heart_PostPackages.append(Post_Data2)
-    return Heart_PostPackages#返回所有视频心跳构造包
-
 def Start_Run():
-    Post_D = Make_Heart()
+    Post_D = M_Heart()
     Count = 0
     for P_E in Post_D:
         Count+=1
@@ -134,6 +119,5 @@ if __name__ == "__main__":
         Start_Run()
         Num+=1
         print("\n第{}轮结束,第{}轮即将开始...\n".format(Num,Num+1))
-    
     
 
