@@ -1,4 +1,4 @@
-import requests,re,time,math,random
+import requests,re,time,math,random,os
 from bs4 import BeautifulSoup
 def Get_PostData(LoginUrl):
     '''
@@ -23,8 +23,8 @@ def Start_Login():
     '''
     ValueData,Req_Cookie = Get_PostData(LoginUrl)
     Post_data = {
-        "username":213208130117912,#用户名
-        "password":123456,#密码
+        "username":,#用户名
+        "password":,#密码
         "lt":ValueData[0],
         "execution":ValueData[1],
         "_eventId":ValueData[2],
@@ -56,7 +56,7 @@ def Get_Course_ContentUrl(): #获取各个课程API URL
         Content_Urls.append(Course_ContentUrl)
     return Content_Urls
 
-def M_Heart():#获取各个课程下属全部视频信息
+def M_Heart():#获取各个课程下属全部视频信息并且构造数据包写入txt
     Post_Data0 = {
         "playStatus":"true",
         "isResourcePage":"true",
@@ -68,7 +68,6 @@ def M_Heart():#获取各个课程下属全部视频信息
         "timePoint":random.random()*100
     }
     Content_Urls = Get_Course_ContentUrl()
-    P_D_H = []
     for Url in Content_Urls:#进行第一层循环
         Course_DeatilContent = requests.get(Url,headers=LoginHeaders).json()['body']
         Course_Json_Len = len(Course_DeatilContent)
@@ -79,12 +78,11 @@ def M_Heart():#获取各个课程下属全部视频信息
                 if(Type_Ac == "2"):#过滤非视频链接
                     ACtiveID_CourseID = {}
                     Deal_Url = Url.replace("http://xuexi.jsou.cn/jxpt-web/student/course/getAllActivity/","")#处理课程URL，提取CRL
-                    #Active_IDS.append(Active_Info["activityId"])#存储AID
-                    #Deal_U.append(Deal_Url)#存储CID
                     Post_Data0["courseVersionId"] = Deal_Url
                     Post_Data0["activityId"] = Active_Info["activityId"]
-                    P_D_H.append(Post_Data0)
-    return P_D_H
+                    with open("PostData.txt","a+") as f:
+                        f.write(str(Post_Data0)+"\n")#写入数据包
+    print("写入完成,请重新运行脚本")
 
 def SetToken():#根据网站逆向得出Token算法
     len_ = 8.or(32)
@@ -98,13 +96,18 @@ def SetToken():#根据网站逆向得出Token算法
     return Pwd
     
 def Start_Run():
-    Post_D = M_Heart()
+    print("等待刷课中....")
     Count = 0
-    for P_E in Post_D:
+    with open("PostData.txt","r+") as f:
+        P_Data = f.readlines()
+    for P_E in P_Data:
         Count+=1
+        R_I = random.randint(8,10)
+        print("本次随机间隔为{}秒...等待中...\n".format(R_I))
+        time.sleep(R_I)
         Repo = requests.post(HeartBeatUrl,headers=LoginHeaders,data=P_E,timeout=3).json()
         if(Repo["error"]==False):
-            print("刷课运行正常，正在进行第{}个视频".format(Count))
+            print("刷课运行正常，正在进行第{}个视频\n".format(Count))
     Count=0
 
     
@@ -115,9 +118,12 @@ if __name__ == "__main__":
     CourseUrl = "http://xuexi.jsou.cn/jxpt-web/student/courseuser/getAllCurrentCourseByStudent"
     HeartBeatUrl = "http://xuexi.jsou.cn/jxpt-web/common/learningBehavior/heartbeat"
     LoginHeaders = {"Host":"xuexi.jsou.cn","Cookie":Start_Login()}
-    while True:
-        Start_Run()
-        Num+=1
-        print("\n第{}轮结束,第{}轮即将开始...\n".format(Num,Num+1))
+    if(os.path.exists("PostData.txt")==False):
+        M_Heart()
+    else:
+        while True:
+            Start_Run()
+            Num+=1
+            print("\n第{}轮结束,第{}轮即将开始...\n".format(Num,Num+1))
     
 
